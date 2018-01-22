@@ -1,0 +1,33 @@
+{
+  "name": "robotron",
+  "version": "0.0.1",
+  "description": "windowed console output",
+  "main": "lib/main.js",
+  "scripts": {
+    "build": "coffee --map -o lib -c src",
+    "doctoc": "doctoc README.md",
+    "test": "npm run build && tap --harmony lib/tests/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loveencounterflow/robotron.git"
+  },
+  "keywords": [
+    "console",
+    "curses",
+    "blessed",
+    "ANSI",
+    "colors",
+    "window",
+    "windows",
+    "terminal"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-xterm": "^1.1.16",
+    "cnd": "^4.3.1",
+    "merge-options": "^1.0.0"
+  }
+}
