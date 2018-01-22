@@ -29,60 +29,54 @@ line_count = 20
 #-----------------------------------------------------------------------------------------------------------
 settings =
   #.........................................................................................................
-  base:
-    top:                  10
-    left:                 20
-    width:                '50%'
-    height:               '50%'
-    label:                ' {bold}{cyan-fg} LABEL HERE {/cyan-fg}{/bold} {#0088ff-fg}(Drag Me){/#0088ff-fg} '
-    draggable:            true
-    mouse:                true
+  '*':
     smartCSR:             true
     # log:                  process.env.HOME + '/blessed-terminal.log'
     fullUnicode:          true
     dockBorders:          true
     ignoreDockContrast:   true
     autoPadding:          false
+    mouse:                true
+  #.........................................................................................................
+  base:
+    _extends:             '*'
+    top:                  10
+    left:                 20
+    width:                '50%'
+    height:               '50%'
+    label:                ' {bold}{cyan-fg} LABEL HERE {/cyan-fg}{/bold} {#0088ff-fg}(Drag Me){/#0088ff-fg} '
+    draggable:            true
     border:               'line'
-    # style:
-    #     fg:        'default'
-    #     bg:        'default'
-    #     border:    { fg: 'default', }
-    #     focus:     { border: { fg: 'green', }, }
-    #     scrolling: { border: { fg: 'red', }, }
-    cursor:        { color: 'red', }
+    tags:                 true
+    style:
+        fg:        'default'
+        bg:        'default'
+        border:    { fg: 'default', }
+        focus:     { border: { fg: 'cyan', }, }
+        scrolling: { border: { fg: 'red', }, }
+    # cursor:        { color: 'red', }
   #.........................................................................................................
   screen:
-    _extends:           'base'
+    _extends:           '*'
     log:                '/tmp/blessed-terminal.log'
-    _title:             'fancy!'
+    _title:             'robotron'
   #.........................................................................................................
   screen_one:
-    'cursor.color':   'red'
+    _extends:         'base'
     top:              10
     left:             20
     width:            '50%'
     height:           line_count
-    tags:             true
-    border:           'line'
     label:            ' {bold}{cyan-fg}ANSI Art{/cyan-fg}{/bold} {#0088ff-fg}(Drag Me){/#0088ff-fg} '
-    # handler:        ->
-    draggable:        true
-    mouse:            true
   #.........................................................................................................
   top_screen:
+    _extends:         'base'
     top:              3
     left:             80
     width:            '50%'
     height:           10
     label:            ' {bold}{cyan-fg}top{/cyan-fg}{/bold} {#0088ff-fg}(Drag Me){/#0088ff-fg} '
     # handler:        ->
-    mouse:            true
-    smartCSR:             true
-    # log:                  process.env.HOME + '/blessed-terminal.log'
-    fullUnicode:          true
-    dockBorders:          true
-    ignoreDockContrast:   true
     style:
       fg: 'default'
       bg: 'yellow'
@@ -91,6 +85,7 @@ settings =
           fg: 'green'
   #.........................................................................................................
   fmanager:
+    _extends:         'base'
     # // parent: screen
     border:           'line'
     top:              0
@@ -101,56 +96,65 @@ settings =
     mouse:            true
     cwd:              __dirname
   #.........................................................................................................
-  terminal:
-    parent:       screen
-    cursor:       'line'
-    cursorBlink:  true
-    screenKeys:   false
-    label:        ' multiplex.js '
-    left:         0
-    top:          0
-    width:        '50%'
-    height:       '50%'
+  terminals:
+    _extends:         'base'
+    shell:            process.env.SHELL || 'sh'
+    args:             []
+    env:              process.env
+    cwd:              process.cwd()
+    cursorType:       'block'
+    scrollback:       1000
+    label:            "terminal"
   #.........................................................................................................
   xterm:
-    # shell:         process.env.SHELL || 'sh'
-    # args:          []
-    shell:          'top',
-    args:           [ '-d', '0.1', ],
-    env:            process.env
-    cwd:            process.cwd()
-    cursorType:     'block'
-    border:         'line'
-    scrollback:     1000
-    left:           0
-    top:            0
-    width:          -> Math.floor screen.width / 2
-    height:         -> screen.height
-    label:          "Sample XTerm #1"
+    _extends:         'terminals'
+    shell:            'top',
+    args:             [ '-d', '0.1', ],
+    left:             0
+    top:              0
+    width:            ( screen ) -> Math.floor screen.width / 2
+    height:           ( screen ) -> screen.height
+    label:            "Sample XTerm #1"
 
 #-----------------------------------------------------------------------------------------------------------
-screen = blessed.screen({
-  smartCSR:           true
-  log:                '/tmp/blessed-terminal.log'
-  fullUnicode:        true
-  dockBorders:        true
-  ignoreDockContrast: true
-  autoPadding:        false
-});
+@resolve_dependencies = ( settings, key ) ->
+  @_resolve_dependencies settings, key, []
 
-settings.xterm.width  = settings.xterm.width()
-settings.xterm.height = settings.xterm.height()
+#-----------------------------------------------------------------------------------------------------------
+@_resolve_dependencies = ( settings, key, R ) ->
+  entry = settings[ key ]
+  throw new Error "unknown settings key #{rpr key}" unless entry?
+  R.unshift key
+  return ( @_resolve_dependencies settings, sub_key, R ) if ( sub_key = entry._extends )?
+  return R
 
+#-----------------------------------------------------------------------------------------------------------
+@_list_settings_from_key = ( settings, key ) ->
+  return ( settings[ k ] for k in @resolve_dependencies settings, key )
+
+#-----------------------------------------------------------------------------------------------------------
+@settings_from_key = ( parent, settings, key ) ->
+  switch arity = arguments.length
+    when 2 then [ parent, settings, key, ] = [ null, parent, settings, ]
+    when 3 then null
+    else throw new Error "expected 2 or 3 arguments, got #{arity}"
+  #.........................................................................................................
+  R = copy_merge ( @_list_settings_from_key settings, key )...
+  for k in [ 'left', 'top', 'width', 'height', ]
+    continue unless CND.isa_function ( f = R[ k ] )
+    R[ k ] = f parent
+  #.........................................................................................................
+  return R
+
+#-----------------------------------------------------------------------------------------------------------
+screen = blessed.screen @settings_from_key    settings, 'screen'
 screen.title          = settings.screen._title ? 'kannwas'
 screen.key [ 'escape', 'C-q', ], ( chr, key ) -> process.exit 0
-
-
 #...........................................................................................................
-# terminal      = blessed.terminal    copy_merge settings.base, settings.terminal
-body          = blessed.box         copy_merge settings.base, settings.screen_one
-fmanager      = blessed.filemanager copy_merge settings.base, settings.fmanager
-top_screen    = blessed.box         copy_merge settings.base, settings.top_screen
-xterm         = new XTerm           copy_merge settings.base, settings.xterm
+body          = blessed.box         @settings_from_key screen, settings,  'screen_one'
+fmanager      = blessed.filemanager @settings_from_key screen, settings,  'fmanager'
+top_screen    = blessed.box         @settings_from_key screen, settings,  'top_screen'
+xterm         = new XTerm           @settings_from_key screen, settings,  'xterm'
 # #...........................................................................................................
 # terminal.pty.on 'data', ( data ) ->
 #   screen.log JSON.stringify data
