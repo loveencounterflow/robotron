@@ -9,7 +9,7 @@
 ############################################################################################################
 CND                       = require 'cnd'
 rpr                       = CND.rpr
-badge                     = 'YAU/DEMO-2'
+badge                     = 'ROBOTRON'
 debug                     = CND.get_logger 'debug',     badge
 alert                     = CND.get_logger 'alert',     badge
 whisper                   = CND.get_logger 'whisper',   badge
@@ -19,10 +19,10 @@ urge                      = CND.get_logger 'urge',      badge
 info                      = CND.get_logger 'info',      badge
 #...........................................................................................................
 copy_merge                = require 'merge-options'
-blessed                   = require 'blessed'
+# blessed                   = require 'blessed'
+# blessed                   = require 'node-blessed'
 XTerm                     = require 'blessed-xterm'
 every                     = ( dts, f ) -> setInterval f, dts * 1000
-
 
 
 #-----------------------------------------------------------------------------------------------------------
@@ -168,7 +168,17 @@ settings =
     mousePassthrough: true
     label:            "htop"
   #.........................................................................................................
-  terminal:
+  terminal_1:
+    _extends:         'terminals'
+    # _show:            yes
+    left:             0
+    top:              0
+    width:            30
+    height:           20
+    mousePassthrough: true
+    label:            "terminal"
+  #.........................................................................................................
+  terminal_2:
     _extends:         'terminals'
     # _show:            yes
     left:             ( screen ) -> Math.floor screen.width / 3
@@ -217,11 +227,11 @@ mylist = null
 @method_a = ->
   #...........................................................................................................
   # top_screen    = blessed.box         @settings_from_key screen, settings,  'top_screen'
-  # top           = new XTerm           @settings_from_key screen, settings,  'top'
+  top           = new XTerm           @settings_from_key screen, settings,  'top'
   fmanager      = blessed.filemanager @settings_from_key screen, settings,  'fmanager'
   htop          = new XTerm           @settings_from_key screen, settings,  'htop'
-  terminal_1    = new XTerm           @settings_from_key screen, settings, { top: 0, left: 0, width: '100%', },  'terminal'
-  terminal_2    = new XTerm           @settings_from_key screen, settings,  'terminal'
+  terminal_1    = new XTerm           @settings_from_key screen, settings,  'terminal_1'
+  terminal_2    = new XTerm           @settings_from_key screen, settings,  'terminal_2'
   mylist        = blessed.list        @settings_from_key screen, settings,  'mylist'
   status        = blessed.box         @settings_from_key screen, settings,  'status'
   # #...........................................................................................................
@@ -230,7 +240,7 @@ mylist = null
   mylist.on 'action', ( P... ) -> screen.log '22821', 'mylist', P
 
   #...........................................................................................................
-  # screen.append top
+  screen.append top
   # screen.append body
   # screen.append top_screen
   # screen.append htop
